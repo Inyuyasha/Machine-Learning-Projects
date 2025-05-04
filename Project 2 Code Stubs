@@ -1,0 +1,149 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+df = pd.read_csv('heart.csv')
+df.head()
+
+1) Create 10 plots to explore and visualize the data.
+#1
+sns.countplot (x='target', data=df)
+plt.title('Heart Disease Presence (Target)')
+plt.show()
+
+#2
+sns.histplot(df['age'], bins=20, kde=True)
+plt.title('Age Distribution')
+plt.show()
+
+#3
+sns.countplot(x='sex', data=df)
+plt.title('Gender Distribution')
+plt.show()
+
+#4
+sns.countplot(x='cp', hue='target', data=df)
+plt.title('Chest Pain Type by Heart Disease')
+plt.show()
+
+#5
+sns.scatterplot(x='age', y='thalach', hue='target', data=df)
+plt.title('Age vs Max Heart Rate by Heart Disease')
+plt.show()
+
+#6
+sns.boxplot(x='target', y='trestbps', data=df)
+plt.title('Resting Blood Pressure by Heart Disease')
+plt.show()
+
+#7
+sns.histplot(df['chol'], bins=30, kde=True)
+plt.title('Cholesterol Distribution')
+plt.show()
+
+#8
+sns.boxplot(x='target', y='oldpeak', data=df)
+plt.title('Oldpeak (ST depression) by Heart Disease')
+plt.show()
+
+#9
+sns.countplot(x='slope', hue='target', data=df)
+plt.title('Slope of ST Segement by Heart Disease')
+plt.show()
+
+#10
+sns.countplot(x='ca', hue='target', data=df)
+plt.title('Number of Major Vessels by Heart Disease')
+plt.show()
+
+2) Use LogisticRegressionCV to train 3 models using 3 differently penalty options: l1, l2, and elasticnet.
+
+from sklearn.linear_model import LogisticRegressionCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+
+X = df.drop(columns = 'target')
+y = df['target']
+
+X.head()
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=101)
+
+2a) Scale all 13 features.
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_train_scaled[:5]
+X_test_scaled = scaler.transform(X_test)
+X_test_scaled[:5]
+
+#Model 1
+logcv_model = LogisticRegressionCV(penalty='elasticnet', solver='saga', l1_ratios = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], Cs = [0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 69])
+logcv_model.fit(X_train_scaled, y_train)
+logcv_model.C_
+logcv_model.l1_ratio_
+logcv_model.coef_
+y_pred = logcv_model.predict(X_test_scaled)
+print(classification_report(y_test, y_pred))
+coefs = pd.Series(index=X.columns, data=logcv_model.coef_[0])
+coefs = coefs.sort_values()
+plt.figure(figsize=(10,6))
+sns.barplot(x=coefs.index,y=coefs.values, hue=coefs.index);
+
+#Model 2
+logcv_model = LogisticRegressionCV(penalty='l1', solver='saga', Cs = [0.01, 0.05, 1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 69.69])
+logcv_model.fit(X_train_scaled, y_train)
+logcv_model.C_
+logcv_model.coef_
+y_pred = logcv_model.predict(X_test_scaled)
+print(classification_report(y_test, y_pred))
+coefs = pd.Series(index=X.columns, data=logcv_model.coef_[0])
+coefs = coefs.sort_values()
+plt.figure(figsize=(10,6))
+sns.barplot(x=coefs.index,y=coefs.values, hue=coefs.index);
+
+#Model 3
+logcv_model = LogisticRegressionCV(penalty='l2', solver='saga', Cs = [0.11, 0.55, 1.11, 2.22, 3.33, 4.44, 5.55, 6.66, 7.77, 69.6699])
+logcv_model.fit(X_train_scaled, y_train)
+logcv_model.C_
+logcv_model.coef_
+y_pred = logcv_model.predict(X_test_scaled)
+print(classification_report(y_test, y_pred))
+coefs = pd.Series(index=X.columns, data=logcv_model.coef_[0])
+coefs = coefs.sort_values()
+plt.figure(figsize=(10,6))
+sns.barplot(x=coefs.index,y=coefs.values, hue=coefs.index);
+
+2V) Report the 3 most important features.
+The three important features in all three models that was produced was CP, Sex, CA
+
+3) Which model performs the best?
+Model 1
+          precision    recall  f1-score   support
+
+       0       0.90      0.80      0.84        44
+       1       0.83      0.91      0.87        47
+
+accuracy                           0.86        91
+macro avg 0.86 0.86 0.86 91 weighted avg 0.86 0.86 0.86 91
+
+Model 2
+precision    recall  f1-score   support
+
+       0       0.88      0.80      0.83        44
+       1       0.82      0.89      0.86        47
+
+accuracy                           0.85        91
+macro avg 0.85 0.84 0.85 91 weighted avg 0.85 0.85 0.85 91
+
+Model 3
+       0       0.92      0.77      0.84        44
+       1       0.81      0.94      0.87        47
+
+accuracy                           0.86        91
+macro avg 0.87 0.85 0.86 91 weighted avg 0.87 0.86 0.86 91
+
+
+Model 3 performs the best out of the other two due to having slight higher margins in precision and f1_score.
+4) For the best performing model, identify all the features such that increasing the feature value results in an increase in likelihood of having heart disease.
+The features that increase the values with an increase is (fbs, restecg, thalach, slope, cp). The remaining features show an increase towards the negative values when there is an increase of having heart disease.
